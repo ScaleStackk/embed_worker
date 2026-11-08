@@ -1,0 +1,11 @@
+services:
+  embedding-worker:
+    image: legal-embedding-worker:latest
+    build:
+      context: .
+    environment:
+      INPUT_PDF: /data/input.pdf
+      OUTPUT_JSON: /data/judgment_embeddings.json
+      OMP_NUM_THREADS: "2"
+    volumes:
+      - ./data:/data
