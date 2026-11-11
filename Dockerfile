@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --requirement requirements.txt
 COPY download_model.py ./
 RUN HF_HUB_OFFLINE=0 python download_model.py
 
-COPY embed_judgment.py embedding_server.py import_qdrant.py container_entrypoint.py ./
+COPY document_identity.py embed_judgment.py embedding_server.py import_qdrant.py kafka_consumer.py container_entrypoint.py ./
 
 RUN useradd --create-home --uid 10001 worker \
     && chown -R worker:worker /models /app
