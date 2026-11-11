@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
@@ -17,6 +16,8 @@ from typing import Iterable
 
 import fitz
 from fastembed import TextEmbedding
+
+from document_identity import resolve_document_identity
 
 
 DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
@@ -48,6 +49,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-words", type=int, default=DEFAULT_CHUNK_WORDS)
     parser.add_argument("--overlap-words", type=int, default=DEFAULT_OVERLAP_WORDS)
     parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument(
+        "--document-id",
+        help=(
+            "Canonical ID assigned by the upload API. If omitted, the PDF SHA-256 "
+            "is used for backwards-compatible one-file runs."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -70,14 +78,6 @@ def chunk_words(text: str, size: int, overlap: int) -> Iterable[tuple[int, str]]
         yield start, " ".join(chunk)
         if start + size >= len(words):
             break
-
-
-def document_id(pdf_path: Path) -> str:
-    digest = hashlib.sha256()
-    with pdf_path.open("rb") as pdf_file:
-        for block in iter(lambda: pdf_file.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def normalized(vector: list[float]) -> list[float]:
@@ -124,7 +124,7 @@ def main() -> int:
         raise FileNotFoundError(f"PDF not found: {args.pdf}")
 
     started = time.perf_counter()
-    doc_id = document_id(args.pdf)
+    doc_id, pdf_sha256 = resolve_document_identity(args.pdf, args.document_id)
     chunks, page_count = extract_chunks(
         args.pdf, doc_id, args.chunk_words, args.overlap_words
     )
@@ -162,6 +162,7 @@ def main() -> int:
         "schema_version": "1.0",
         "document": {
             "document_id": doc_id,
+            "content_sha256": pdf_sha256,
             "source_file": args.pdf.name,
             "page_count": page_count,
         },

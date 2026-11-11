@@ -25,12 +25,24 @@ def find_input_pdf(data_dir: Path) -> Path:
 
 
 def main() -> None:
+    mode = os.environ.get("WORKER_MODE", "oneshot").strip().lower()
+    if mode == "kafka":
+        os.execv(
+            sys.executable,
+            [sys.executable, "/app/kafka_consumer.py", *sys.argv[1:]],
+        )
+    if mode != "oneshot":
+        raise ValueError("WORKER_MODE must be 'oneshot' or 'kafka'")
+
     if len(sys.argv) > 1:
         arguments = sys.argv[1:]
     else:
         pdf = find_input_pdf(Path("/data"))
         output = os.environ.get("OUTPUT_JSON", "/data/judgment_embeddings.json")
         arguments = [str(pdf), "--output", output]
+        document_id = os.environ.get("DOCUMENT_ID", "").strip()
+        if document_id:
+            arguments.extend(["--document-id", document_id])
 
     completed = subprocess.run(
         [sys.executable, "/app/embed_judgment.py", *arguments], check=False

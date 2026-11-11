@@ -1,0 +1,23 @@
+services:
+  embedding-worker:
+    restart: unless-stopped
+    environment:
+      WORKER_MODE: kafka
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:19092}
+      KAFKA_UPLOAD_TOPIC: ${KAFKA_UPLOAD_TOPIC:-judgment.uploaded}
+      KAFKA_STATUS_TOPIC: ${KAFKA_STATUS_TOPIC:-processing.status}
+      KAFKA_FAILED_TOPIC: ${KAFKA_FAILED_TOPIC:-processing.failed}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP:-questacase-embedding-worker-v1}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-judgment_chunks}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+    networks:
+      - questacase
+
+networks:
+  questacase:
+    external: true
+    name: ${DOCKER_NETWORK:-questacase}
